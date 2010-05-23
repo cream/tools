@@ -22,7 +22,6 @@ import code
 try:
     import readline
     import rlcompleter
-    import __main__
     readline.parse_and_bind("tab: complete")
 except ImportError:
     # no readline support on Windoze
