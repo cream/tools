@@ -19,28 +19,47 @@
 import sys
 import dbus
 import code
+try:
+    import readline
+    import rlcompleter
+    import __main__
+    readline.parse_and_bind("tab: complete")
+except ImportError:
+    # no readline support on Windoze
+    readline = None
 
-BUS_NAME = sys.argv[1]
-OBJECT_PATH = sys.argv[2]
 
-bus = dbus.SessionBus()
-obj = bus.get_object(BUS_NAME, OBJECT_PATH)
+def dbus_object_get_methods(obj):
+    methods = dict()
+    data = obj.Introspect()
+    for line in data.split('\n'):
+        if line.strip().startswith('<method name="'):
+            method = line.strip().split('"')[1]
+            methods[method] = getattr(obj, method)
+    return methods
 
-data = obj.Introspect()
 
-methods = {}
+if __name__ == '__main__':
+    try:
+        BUS_NAME = sys.argv[1]
+        OBJECT_PATH = sys.argv[2]
+    except IndexError:
+        print 'USAGE:  %s  bus_name object_path' % sys.argv[0]
+        exit(1)
 
-for l in data.split('\n'):
-    if l.strip().startswith('<method name="'):
-        m = l.strip().split('"')[1]
-        methods[m] = obj.__getattr__(m)
+    bus = dbus.SessionBus()
+    obj = bus.get_object(BUS_NAME, OBJECT_PATH)
+    obj_methods = dbus_object_get_methods(obj)
 
-console = code.InteractiveConsole(methods)
-console.interact('''\
-DBus API Console
+    if readline is not None:
+        readline.set_completer(rlcompleter.Completer(obj_methods).complete)
 
- » bus name:    {0}
- » object path: {1}
+    console = code.InteractiveConsole(obj_methods)
+    console.interact('''\
+    DBus API Console
 
-Running interactive console...\
-'''.format(BUS_NAME, OBJECT_PATH))
+     » bus name:    {0}
+     » object path: {1}
+
+    Running interactive console...\
+    '''.format(BUS_NAME, OBJECT_PATH))
