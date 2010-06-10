@@ -4,6 +4,7 @@ from distutils.sysconfig import get_python_lib
 
 SITE_PACKAGES = get_python_lib()
 RUN_AGAIN = False
+IGNORE = ['bjoern']
 
 try:
     import cream.dist
@@ -74,6 +75,8 @@ def build_tree(tree_root, locations):
     if not os.path.exists(tree_root):
         os.makedirs(tree_root)
     for name, fs_location in locations:
+        if name in IGNORE:
+            continue
         fs_location = os.path.abspath(fs_location)
         if os.path.isdir(fs_location):
             # Package.
